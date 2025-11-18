@@ -10,9 +10,12 @@ src/
 ├── utils/
 │   └── string_utils.c             // ft_strlen, ft_isdigit, ft_isspace, ft_strdup
 └── parser/
-    ├── parser.c                   // orchestrateur : init/destroy state, parse_header, parse_map
-    └── parse_header/
-        └── parse_header.c         // logique détaillée de lecture des identifiants
+    ├── parser.c                   // orchestrateur : init/destroy state, parse_header, parse_map, validate_map
+    ├── parse_header/
+    │   └── parse_header.c         // logique détaillée de lecture des identifiants
+    └── parse_map/
+        ├── parse_map.c            // lecture de la carte, charset, joueur unique
+        └── validate_map.c         // vérification des bords/espaces/débordements
 ```
 `cube3d.h` expose toutes les structures (`t_parser_state`, `t_color`, `TEX_*`) et les prototypes partagés.
 
@@ -26,7 +29,8 @@ src/
    - Ouvre le fichier, sinon `print_error("Impossible d'ouvrir le fichier")`.
    - Appelle successivement :
      - `parse_header(fd, &state, &first_map_line);`
-     - `parse_map(fd, &state, first_map_line);` (actuellement un stub qui libère les lignes).
+     - `parse_map(fd, &state, first_map_line);`
+     - `validate_map(&state);`
    - Détruit l’état (`destroy_state`) puis retourne `0` ou `1`.
 
 ## 3. Détails par module
@@ -38,13 +42,14 @@ src/
 ### 3.2 src/parser/parser.c
 - `init_state` met tous les chemins de textures à `NULL` et marque `floor/ceiling` comme non définis.
 - `destroy_state` libère chaque `tex_path[i]`.
-- `parse_map` est pour l’instant un placeholder : il reçoit la première ligne de carte, la libère, puis parcourt le reste du fichier. La vraie logique (stockage des lignes, validations grossières) sera ajoutée plus tard.
+- `parse_map` stocke chaque ligne de carte (charset strict, conversion du joueur en `0`, rejet ligne vide, joueur unique).
+- `validate_map` contrôle la fermeture : bords supérieurs/inférieurs en `1/espaces`, bords latéraux, débordements murés, espaces internes entourés de `1/espaces`.
 - `parse` relie tous ces éléments et assure la fermeture du descripteur même en cas d’erreur.
 
 ### 3.3 src/parser/parse_header/parse_header.c
 Contient l’ensemble des helpers nécessaires à la phase header :
 - `trim_newline`, `line_is_empty`, `looks_like_map_line` détectent quand on bascule vers la carte.
-- `parse_texture_path` stocke `NO/SO/WE/EA` (avec `trim_trailing_spaces` et duplication).
+- `parse_texture_path` stocke `NO/SO/WE/EA` (avec `trim_trailing_spaces`, contrôle `.xpm`, ouverture lecture, duplication).
 - `parse_color_value` convertit `F` et `C` en `t_color` (contrôle strict de la syntaxe `R,G,B`).
 - `handle_identifier` choisit le bon parseur selon le préfixe.
 - `parse_header` boucle sur `get_next_line`, saute les lignes vides tant que la carte n’a pas commencé, stocke les identifiants, et arrête tout si une ligne de carte arrive avant que les six éléments soient présents.
@@ -71,14 +76,15 @@ main
     │   │    ├── parse_texture_path
     │   │    └── parse_color_value
     │   └── looks_like_map_line
-    ├── parse_map (stub actuel)
+    ├── parse_map
+    │    └── handle_map_line (charset, joueur unique, stockage)
+    ├── validate_map (bords, débordements, espaces internes)
     └── destroy_state
 ```
 Cette hiérarchie reflète exactement ce qui se passe dans le code.
 
 ## 5. Prochaines étapes prévues
-- Implémenter un vrai `parse_map` (stockage des lignes, contrôles immédiats, détection du joueur).
-- Ajouter `validate_map` (vérification d’enceinte fermée, flood-fill).
-- Étendre le dossier `src/parser/` avec `parse_map/`, `validate_map/`, etc., en respectant la structure décrite ici.
+- Tester les cartes “bad” déjà fournies via le script `tools/run_bad_maps.sh` (attend un exit code ≠0).
+- Étendre plus tard le validateur si besoin (ex : flood-fill complet).
 
 Ce document doit être tenu à jour dès que la logique change ou qu’un nouveau module est ajouté.

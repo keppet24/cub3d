@@ -118,6 +118,15 @@ Idée clé : on accumule toutes les lignes de carte, on contrôle immédiatement
    └────────┘ └────────┘
 ```
 
+#### validate_map — règles concrètes (scan ligne par ligne)
+- Ignorer les espaces de tête sur chaque ligne.
+- Ligne 0 et dernière ligne : uniquement `'1'` ou `' '` autorisés.
+- Sinon : premier et dernier caractère non-espace doivent être `'1'`.
+- Une fois dans le corps : toute espace interne ne peut toucher que `'1'` ou `' '` (haut, bas, gauche, droite).
+- Si `strlen(curr)` dépasse `strlen(row_top)` et la colonne dépasse `row_top`, le caractère courant doit être `'1'`.
+- Même logique avec `row_bottom` : si la colonne déborde la longueur du bas, forcer `'1'`.
+- Ces règles garantissent la fermeture de la carte même quand les lignes sont de longueur différente.
+
 #### init_map_buffer / push_line (Niveau 2, utilitaires)
 ```
 ┌──────────────────────────┐

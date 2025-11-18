@@ -39,8 +39,6 @@ bool	texture_payload_invalid(char *payload)
 {
 	size_t	j;
 
-	if (*payload != '.' && *payload != '/')
-		return (true);
 	trim_trailing_spaces(payload);
 	if (*payload == '\0')
 		return (true);
@@ -51,6 +49,30 @@ bool	texture_payload_invalid(char *payload)
 			return (true);
 		j++;
 	}
+	return (false);
+}
+
+bool	texture_is_xpm(const char *path)
+{
+	size_t	len;
+
+	len = ft_strlen(path);
+	if (len < 4)
+		return (true);
+	if (path[len - 4] != '.' || path[len - 3] != 'x'
+		|| path[len - 2] != 'p' || path[len - 1] != 'm')
+		return (true);
+	return (false);
+}
+
+bool	texture_unreadable(const char *path)
+{
+	int	fd;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return (true);
+	close(fd);
 	return (false);
 }
 

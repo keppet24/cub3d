@@ -57,16 +57,27 @@ t_map_buffer
 
 ### 3.6 parse_map(int fd, t_parser_state *state, char *first_map_line)
 - **Objectif** : lire toutes les lignes de carte, appliquer les contrôles grossiers, remplir `state` avec carte et joueur.
-- **Stratégie** : init buffer, `handle_map_line` sur `first_map_line`, boucle `get_next_line` (trim `\n`, `handle_map_line`), puis vérifie qu’il y a exactement un joueur. En cas d’erreur ou de joueur manquant/multiple, libère le buffer.
+- **Stratégie** : init buffer, `handle_map_line` sur `first_map_line`, boucle `get_next_line` (trim `\n`), accepte une ou plusieurs lignes finales vides ou composées uniquement d’espaces (fin de carte), refuse tout contenu non vide après cette fin, puis vérifie qu’il y a exactement un joueur. En cas d’erreur ou de joueur manquant/multiple, libère le buffer.
 - **Ce que ça modifie** : `state->map_lines` (pointe vers le buffer final), `map_width/height`, `player_*`. En succès, les lignes passent dans `state`; en échec, `free_map_buffer` nettoie tout.
-- **Exemple** : carte 4 lignes → push première, lire/pousser 3 suivantes, à la fin `map_lines` a 4 lignes, largeur max, joueur unique. Sinon erreur `"Joueur absent ou multiple"` et libération du buffer.
+- **Exemple** : carte 4 lignes + 1 ligne vide finale → push des 4 lignes, la ligne vide termine la carte, `map_lines` a 4 lignes, largeur max, joueur unique. Une ligne non vide après cette ligne vide déclencherait une erreur.
+
+### 3.7 validate_map(t_parser_state *state)
+- **Objectif** : vérifier la fermeture de la carte et l’absence de trous, selon les règles “top→bottom, left→right”.
+- **Stratégie** :
+  - Vérifie présence de carte et joueur unique.
+  - Lignes 0 et dernière : uniquement `'1'` ou espace.
+  - Lignes internes : premier et dernier non-espace doivent être `'1'`.
+  - Débordements par rapport aux longueurs de la ligne du haut ou du bas : si `len courante > len voisine` et `x >= len voisine`, alors le caractère doit être `'1'`.
+  - Espaces internes (après les espaces de tête) ne peuvent toucher que `'1'` ou espace (haut, bas, gauche, droite).
+- **Ce que ça modifie** : rien, la fonction ne transforme pas la carte ; elle renvoie `false` et imprime une erreur si une règle est violée.
+- **Exemple** : si la ligne courante déborde de 3 colonnes par rapport à la ligne du haut, les 3 derniers caractères doivent être `'1'`; un espace entouré d’un `0` déclenche une erreur.
 
 ## 4. Guide de lecture du code
 1. Lire `t_map_buffer` (dans le header) pour comprendre le stockage dynamique.
 2. Suivre `parse_map` pour voir l’orchestration (init buffer, handle first line, boucle GNL, check joueur).
 3. Détail de `handle_map_line` pour les contrôles immédiats (charset, joueur unique, remplacements).
 4. Plonger dans `push_line` et `push_line_resize` pour voir comment les lignes sont réellement stockées et comment les dimensions sont mises à jour.
-5. Garder à l’esprit que `validate_map` viendra ensuite pour les validations structurelles (non implémenté ici).
+5. Lire `validate_map` pour la fermeture (bords, débordements haut/bas, espaces internes).
 
 ## 5. Check-list de compréhension
 - Je sais où et comment la première ligne de carte est poussée, et comment les suivantes sont lues via `get_next_line`.
@@ -74,6 +85,7 @@ t_map_buffer
 - Je peux expliquer le rôle de `capacity` et pourquoi on double la taille du buffer quand il est plein.
 - Je sais quels caractères sont autorisés dans une ligne de carte et ce qui déclenche une erreur immédiate.
 - Je peux décrire ce que `parse_map` laisse dans `state` à la fin (carte brute + dimensions + joueur unique).
+- Je sais quelles règles `validate_map` applique (bords `1/space`, débordements verticaux forcés à `1`, espaces internes entourés de `1/space`).
 
 ## Pièges / invariants importants
 - `player_count` doit être exactement 1 en sortie de `parse_map` ; sinon c’est une erreur bloquante.
@@ -81,3 +93,4 @@ t_map_buffer
 - `handle_map_line` est le seul endroit qui modifie `player_*` et marque les `N/S/E/W` en `0` ; ailleurs on ne touche pas aux coordonnées/direction.
 - En cas d’échec (charset, joueur multiple, alloc), le buffer est libéré ; en cas de succès, la propriété de `lines` est transférée à `state->map_lines`.
 - `push_line_resize` doit être appelé avant chaque ajout ; si `size == capacity`, il agrandit sinon il ne fait rien.
+- `validate_map` ne touche pas aux données mais retourne `false` au moindre trou détecté (bords ouverts, débordements non murés, espaces adjacents à des `0`).

@@ -58,6 +58,7 @@ char    *get_next_line(int fd);
 int		parse(const char *path);
 bool	parse_header(int fd, t_parser_state *state, char **first_map_line);
 bool	parse_map(int fd, t_parser_state *state, char *first_map_line);
+bool	validate_map(t_parser_state *state);
 size_t	ft_strlen(const char *s);
 bool	ft_isdigit(char c);
 bool	ft_isspace(char c);

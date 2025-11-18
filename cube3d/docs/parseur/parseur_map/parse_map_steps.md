@@ -41,7 +41,16 @@ Scénario : sur `"10N01"`, on trouve `N`, on enregistre le joueur (x=2, y=taille
 ## parse_map
 Petit 1 : `init_map_buffer` puis traiter `first_map_line` via `handle_map_line`.  
 Petit 2 : boucle `get_next_line`, `trim_newline`, puis `handle_map_line` pour chaque ligne suivante.  
-Petit 3 : en cas d’échec à tout moment, libérer le buffer et retourner false.  
-Petit 4 : après la boucle, vérifier que `player_count == 1`. Sinon, erreur et free.  
-Petit 5 : en succès, transférer `buf.lines` dans `state->map_lines` et retourner true.  
-Scénario : avec 4 lignes de carte, `parse_map` pousse la première, lit/pousse les suivantes, détecte le joueur unique, et laisse dans `state` un tableau de 4 lignes prêt pour `validate_map`.
+Petit 3 : si une ligne est vide (ou ne contient que des espaces), marquer la fin de carte ; toute ligne non vide après cette fin déclenche une erreur.  
+Petit 4 : en cas d’échec à tout moment, libérer le buffer et retourner false.  
+Petit 5 : après la boucle, vérifier que `player_count == 1`. Sinon, erreur et free.  
+Petit 6 : en succès, transférer `buf.lines` dans `state->map_lines` et retourner true.  
+Scénario : avec 4 lignes de carte puis une ligne vide finale, `parse_map` pousse les 4 lignes, ignore la ligne vide de fin, détecte le joueur unique, et laisse dans `state` un tableau prêt pour `validate_map`. Une ligne non vide après une ligne vide déclencherait une erreur.
+
+## validate_map
+Petit 1 : vérifier que la carte existe et que `player_count == 1`.  
+Petit 2 : lignes 0 et dernière : chaque caractère doit être `'1'` ou espace.  
+Petit 3 : lignes internes : trouver le premier/dernier non-espace, ils doivent être `'1'`.  
+Petit 4 : si la ligne est plus longue que la ligne du haut ou du bas, toute colonne au-delà de la longueur voisine doit être `'1'`.  
+Petit 5 : pour chaque espace (après les espaces de tête), les voisins N/E/S/O doivent être `'1'` ou espace.  
+Scénario : une ligne qui déborde de 2 colonnes par rapport à la ligne du haut doit avoir `...11` en fin ; un espace collé à un `0` déclenche une erreur.

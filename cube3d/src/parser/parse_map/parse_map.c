@@ -145,14 +145,21 @@ bool	parse_map(int fd, t_parser_state *state, char *first_map_line)
 	t_map_buffer	buf;
 	char			*line;
 	bool			ok;
+	bool			ended;
 
 	init_map_buffer(&buf);
 	ok = handle_map_line(&buf, state, first_map_line);
 	free(first_map_line);
+	ended = false;
 	while (ok && (line = get_next_line(fd)))
 	{
 		trim_newline(line);
-		ok = handle_map_line(&buf, state, line);
+		if (line_is_empty(line))
+			ended = true;
+		else if (ended)
+			ok = (print_error("Contenu apres fin de carte"), false);
+		else
+			ok = handle_map_line(&buf, state, line);
 		free(line);
 	}
 	if (!ok || state->player_count != 1)

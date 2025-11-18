@@ -12,6 +12,7 @@ SRCS		:= src/main.c \
 			   src/parser/parse_header/parse_header_checks.c \
 			   src/parser/parse_header/parse_header.c \
 			   src/parser/parse_map/parse_map.c \
+			   src/parser/parse_map/validate_map.c \
 			   get_next_line.c
 OBJS		:= $(addprefix $(OBJDIR)/,$(SRCS:.c=.o))
 

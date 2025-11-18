@@ -11,5 +11,7 @@ bool	looks_like_map_line(const char *line);
 bool	header_complete(const t_parser_state *state);
 bool	texture_payload_invalid(char *payload);
 bool	parse_component(const char *s, int *out);
+bool	texture_is_xpm(const char *path);
+bool	texture_unreadable(const char *path);
 
 #endif

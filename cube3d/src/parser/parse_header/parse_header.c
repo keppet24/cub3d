@@ -12,6 +12,10 @@ static bool	parse_texture_path(t_parser_state *state, int idx, char *payload)
 		return (print_error("Texture dupliquee"), false);
 	if (texture_payload_invalid(payload))
 		return (print_error("Chemin de texture invalide"), false);
+	if (texture_is_xpm(payload))
+		return (print_error("Texture doit etre en .xpm"), false);
+	if (texture_unreadable(payload))
+		return (print_error("Fichier texture inaccessible"), false);
 	dup = ft_strdup(payload);
 	if (!dup)
 		return (print_error("Allocation echouee"), false);
@@ -60,13 +64,9 @@ static bool	handle_identifier(char *line, t_parser_state *state)
 	size_t	i;
 
 	i = 0;
-	while (line[i] && ft_isspace(line[i]))
-		i++;
-	if (i > 0)
-	{
-		print_error("Identifiant avec espaces en debut de ligne");
-		return (false);
-	}
+	if (ft_isspace(line[i]))
+		return (print_error("Identifiant avec espaces en debut de ligne"),
+			false);
 	if (line[i] == 'N' && line[i + 1] == 'O' && ft_isspace(line[i + 2]))
 		return (parse_texture_path(state, TEX_NO, line + i + 2));
 	if (line[i] == 'S' && line[i + 1] == 'O' && ft_isspace(line[i + 2]))

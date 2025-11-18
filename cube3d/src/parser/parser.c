@@ -58,6 +58,8 @@ int	parse(const char *path)
 	ok = parse_header(fd, &state, &first_map_line);
 	if (ok)
 		ok = parse_map(fd, &state, first_map_line);
+	if (ok)
+		ok = validate_map(&state);
 	close(fd);
 	destroy_state(&state);
 	if (!ok)
